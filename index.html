@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+  body {
+    margin: 0;
+    background: white;
+  }
+
+  .handle {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border-radius: 16px;
+    background: white;
+    border: solid 1px #ccc;
+  }
+
+  .chart {
+    border: solid 1px cyan;
+    float: left;
+    position: fixed;
+    top: 100px;
+    left: 20px;
+  }
+
+  .transform-hack {
+    transform: translate3d(0, 0, 0);
+  }
+
+  .axis text {
+    font: 10px sans-serif;
+    fill: #ccc;
+  }
+
+  .axis path {
+    display: none;
+  }
+
+  .axis line {
+    stroke: #ccc;
+  }
+
+  .run .path {
+    fill: none;
+    stroke: black;
+    stroke-opacity: 0.5;
+  }
+
+  .run.primary .path {
+    stroke-opacity: 1;
+  }
+</style>
+
+<div class="fps">Sample</div>
+<div class="fps-real">Constant</div>
+<button class="add-hack">Add "transform: translate3d(0, 0, 0);"</button>
+<button class="remove-hack">Remove "transform: translate3d(0, 0, 0);"</button>
+<button class="resize">Resize</button>
+<div class="container"></div>
+
+<script src="lib/d3.min.js"></script>
+<script src="scalar-svg-transform.js"></script>
+<script src="scalar-svg.js"></script>
+<script src="fake-data.js"></script>
+<script type="text/javascript">
+// Perf test
+
+// - js execution time
+// - render time
+
+// - init
+// - first data
+// - resize
+// - new data
+// - view changes
+// - scrolling
+// - mousing
+
+// - 1 line
+// - 10 lines
+// - 100 lines
+
+// - 1 charts
+// - 10
+// - 100
+// - 1000
+
+// - small size
+// - medium
+// - large
+
+
+var colors = function (i) {
+    var list = [
+        "#E91E63",
+        "#9C27B0",
+        "#3F51B5",
+        "#2196F3",
+        "#009688",
+        "#8BC34A",
+        "#FF9800",
+        "#FF5722"
+    ];
+    return list[i % list.length];
+};
+
+var numLines = 200,
+    numSteps = 1000,
+    numCharts = 10;
+
+var data = d3.range(numCharts).map(function() {
+  return d3.range(numLines).map(function(i) {
+    return { color: colors(i), data: generateFakeData(numSteps) };
+  });
+});
+
+var container = document.querySelector(".container");
+
+d3.select(".resize").on("click", () => {
+  renderTimer(function() {
+    resizeHandler(100, 200);
+  });
+});
+
+d3.select(".add-hack").on("click", () => {
+  d3.selectAll(".chart").classed("transform-hack", true);
+});
+
+d3.select(".remove-hack").on("click", () => {
+  d3.selectAll(".chart").classed("transform-hack", false);
+});
+
+console.time("Initialize chart");
+var charts = data.map(function(d) {
+  var chartContainer = document.createElement("div");
+  chartContainer.classList.add("chart")
+  container.appendChild(chartContainer);
+  var chart = new ScalarSVGTransform(chartContainer);
+  return chart;
+});
+console.timeEnd("Initialize chart");
+
+console.time("SetData on chart");
+charts.forEach(function(c, i) {
+  c.setData(data[i]);
+});
+console.timeEnd("SetData on chart");
+
+console.time("SetSize of chart");
+charts.forEach(function(c, i) {
+  c.setSize(100, 100);
+});
+console.timeEnd("SetSize of chart");
+
+console.time("Render chart (in javascript)");
+charts.forEach(function(c, i) {
+  c.render();
+});
+console.timeEnd("Render chart (in javascript)");
+
+var drag = d3.behavior.drag()
+  .origin(function(d) { return { x:(+this.style.left.replace("px", "") + 8 - 20), y:(+this.style.top.replace("px", "") + 8 - 100) }; })
+  .on("drag", function() { resizeHandler(d3.event.x, d3.event.y); });
+
+function resizeHandler(w, h) {
+  charts.forEach(function(c) {
+    c.setSize(w, h);
+    c.render();
+  });
+  handle
+      .style("left", w - 8 + 20 + "px")
+      .style("top", h - 8 + 100 + "px");
+
+}
+
+var handle = d3.select(document.body)
+    .append("div")
+    .attr("class", "handle")
+    .call(drag);
+
+resizeHandler(400, 200);
+
+function renderTimer(fn) {
+  var fps = document.querySelector(".fps");
+  var start, progress;
+  requestAnimationFrame(() => {
+    start = performance.now();
+    fn();
+    requestAnimationFrame(() => {
+      finished();
+    });
+  });
+  function finished() {
+    progress = performance.now() - start;
+    fps.textContent = "Sample: " + (1000 / progress).toPrecision(3) + "fps";
+  }
+}
+
+var fps = document.querySelector(".fps-real");
+var last = 0;
+var stack = d3.range(5);
+function step(current) {
+  var progress = current - last;
+  stack.shift()
+  stack.push(progress);
+  fps.textContent = (1000 / (d3.mean(stack))).toPrecision(3) + "fps";
+  requestAnimationFrame(step);
+  last = current;
+}
+requestAnimationFrame(step);
+
+</script>
