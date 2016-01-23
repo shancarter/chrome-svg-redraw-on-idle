@@ -76,7 +76,7 @@
 </style>
 
 <div class="output">
-  <div class="fps-real">Loading can take 5 secs...</div>
+  <div class="fps-real">Initialization can take several seconds...</div>
   <button class="add-hack">Add translate3d(0, 0, 0);</button>
   <button class="remove-hack">Remove translate3d(0, 0, 0)</button>
   <p>If you have a ton of svgs on a page, they all get rendered and composited on anytime you touch the DOM, even if that DOM modification doesn't effect the svgs at all. Here, the only javascript running after initialization is to update the fps counter, and yet CPU usage and chrome redraw suffer continuously. This affects scrolling performance and other script execution speed.</p>
