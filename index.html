@@ -79,9 +79,10 @@
   <div class="fps-real">Initialization can take several seconds...</div>
   <button class="add-hack">Add translate3d(0, 0, 0);</button>
   <button class="remove-hack">Remove translate3d(0, 0, 0)</button>
-  <p>If you have a ton of svgs on a page, they all get rendered and composited on anytime you touch the DOM, even if that DOM modification doesn't effect the svgs at all. Here, the only javascript running after initialization is to update the fps counter, and yet CPU usage and chrome redraw suffer continuously. This affects scrolling performance and other script execution speed.</p>
+  <p>If you have a ton of svgs on a page, they all get rendered and composited when you touch the any part of the DOM, even if that DOM modification doesn't effect the svgs at all. Here, the only javascript running after initialization is to update the fps counter, and yet CPU usage and chrome redraw suffer continuously. This affects scrolling performance and other script execution speed.</p>
   <p>Setting a hack of a 3d transform on the SVG elements clears up the issue and restores 60fps and drastically reduces CPU usage.</p>
   <p>One would expect the initial rendering to be slow, of course, but the subsequent, continuous rendering overhead seems accidental.</p>
+  <p>This bug is only present in some hardware configurations — it is present for me when using a non-retina external monitor, but disappears on my macbook pro's built in retina screen.</p>
 </div>
 <div class="container"></div>
 
