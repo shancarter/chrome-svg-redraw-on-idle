@@ -4,6 +4,34 @@
   body {
     margin: 0;
     background: white;
+    font-family: Helvetica;
+    font-size: 14px;
+    line-height: 1.3em;
+  }
+
+  .output {
+    width: 230px;
+    position: fixed;
+    top: 20px;
+    left: 20px;
+  }
+
+  .container {
+    position: absolute;
+    top: 20px;
+    left: 270px;
+  }
+
+  button {
+    background: grey;
+    color: white;
+    border-radius: 3px;
+    display: block;
+    width: 100%;
+    border: none;
+    margin: 4px 0;
+    text-align: left;
+    padding: 4px 8px;
   }
 
   .handle {
@@ -17,10 +45,6 @@
 
   .chart {
     border: solid 1px cyan;
-    float: left;
-    position: fixed;
-    top: 100px;
-    left: 20px;
   }
 
   .transform-hack {
@@ -51,11 +75,13 @@
   }
 </style>
 
-<div class="fps">Sample</div>
-<div class="fps-real">Constant</div>
-<button class="add-hack">Add "transform: translate3d(0, 0, 0);"</button>
-<button class="remove-hack">Remove "transform: translate3d(0, 0, 0);"</button>
-<button class="resize">Resize</button>
+<div class="output">
+  <div class="fps-real">Loading can take 5 secs...</div>
+  <button class="add-hack">Add translate3d(0, 0, 0);</button>
+  <button class="remove-hack">Remove translate3d(0, 0, 0)</button>
+  <p>If you have a ton of svgs on a page, they all get re-rendered and composited on every frame anytime you touch the DOM, even if that DOM modification doesn't effect the svgs at all. Here, the only javascript running after initialization is to update the fps counter, and yet CPU usage and chrome redraw suffer continuously. This affects scrolling performance and other script execution speed.</p>
+  <p>Setting a hack of a 3d transform on the SVG elements clears up the issue and restores 60fps and drastically reduces CPU usage.</p>
+</div>
 <div class="container"></div>
 
 <script src="lib/d3.min.js"></script>
@@ -63,33 +89,6 @@
 <script src="scalar-svg.js"></script>
 <script src="fake-data.js"></script>
 <script type="text/javascript">
-// Perf test
-
-// - js execution time
-// - render time
-
-// - init
-// - first data
-// - resize
-// - new data
-// - view changes
-// - scrolling
-// - mousing
-
-// - 1 line
-// - 10 lines
-// - 100 lines
-
-// - 1 charts
-// - 10
-// - 100
-// - 1000
-
-// - small size
-// - medium
-// - large
-
-
 var colors = function (i) {
     var list = [
         "#E91E63",
@@ -104,9 +103,9 @@ var colors = function (i) {
     return list[i % list.length];
 };
 
-var numLines = 200,
-    numSteps = 1000,
-    numCharts = 10;
+var numLines = 5000,
+    numSteps = 100,
+    numCharts = 5;
 
 var data = d3.range(numCharts).map(function() {
   return d3.range(numLines).map(function(i) {
@@ -114,13 +113,7 @@ var data = d3.range(numCharts).map(function() {
   });
 });
 
-var container = document.querySelector(".container");
-
-d3.select(".resize").on("click", () => {
-  renderTimer(function() {
-    resizeHandler(100, 200);
-  });
-});
+var container = document.querySelector(".container").appendChild(document.createElement("div"));
 
 d3.select(".add-hack").on("click", () => {
   d3.selectAll(".chart").classed("transform-hack", true);
@@ -159,7 +152,7 @@ charts.forEach(function(c, i) {
 console.timeEnd("Render chart (in javascript)");
 
 var drag = d3.behavior.drag()
-  .origin(function(d) { return { x:(+this.style.left.replace("px", "") + 8 - 20), y:(+this.style.top.replace("px", "") + 8 - 100) }; })
+  .origin(function(d) { return { x:(+this.style.left.replace("px", "") + 8), y:(+this.style.top.replace("px", "") + 8) }; })
   .on("drag", function() { resizeHandler(d3.event.x, d3.event.y); });
 
 function resizeHandler(w, h) {
@@ -168,33 +161,16 @@ function resizeHandler(w, h) {
     c.render();
   });
   handle
-      .style("left", w - 8 + 20 + "px")
-      .style("top", h - 8 + 100 + "px");
-
+      .style("left", w - 8 + "px")
+      .style("top", h - 8 + "px");
 }
 
-var handle = d3.select(document.body)
+var handle = d3.select(container)
     .append("div")
     .attr("class", "handle")
     .call(drag);
 
 resizeHandler(400, 200);
-
-function renderTimer(fn) {
-  var fps = document.querySelector(".fps");
-  var start, progress;
-  requestAnimationFrame(() => {
-    start = performance.now();
-    fn();
-    requestAnimationFrame(() => {
-      finished();
-    });
-  });
-  function finished() {
-    progress = performance.now() - start;
-    fps.textContent = "Sample: " + (1000 / progress).toPrecision(3) + "fps";
-  }
-}
 
 var fps = document.querySelector(".fps-real");
 var last = 0;
